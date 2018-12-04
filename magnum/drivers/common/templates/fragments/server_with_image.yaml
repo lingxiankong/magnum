@@ -1,0 +1,57 @@
+heat_template_version: queens
+
+description: |
+  The heat template is used to create a server that boot from image.
+
+parameters:
+  name:
+    type: string
+    description: server name
+  image:
+    type: string
+    description: glance image used to boot the server
+  flavor:
+    type: string
+    description: flavor to use when booting the server
+  ssh_key_name:
+    type: string
+    description: name of ssh key to be provisioned on our server
+  user_data:
+    type: string
+    description: User data script to be executed by cloud-init.
+  port_id:
+    type: string
+    description: ID of an existing port to associate with this server.
+  server_group_id:
+    type: string
+    description: ID of the server group for this server.
+  availability_zone:
+    type: string
+    description: availability zone for the server.
+  boot_volume_size:
+    type: number
+    description: size of the Cinder boot volume.
+    default: 0
+  boot_volume_type:
+    type: string
+    description: type of the Cinder boot volume.
+
+resources:
+  kube-node:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: name}
+      image: {get_param: image}
+      flavor: {get_param: flavor}
+      key_name: {get_param: ssh_key_name}
+      user_data_format: SOFTWARE_CONFIG
+      software_config_transport: POLL_SERVER_HEAT
+      user_data: {get_param: user_data}
+      networks:
+        - port: {get_param: port_id}
+      scheduler_hints: {group: { get_param: server_group_id }}
+      availability_zone: {get_param: availability_zone}
+
+outputs:
+  server_id:
+    value: {get_resource: kube-node}

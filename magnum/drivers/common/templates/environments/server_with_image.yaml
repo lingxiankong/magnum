@@ -1,0 +1,2 @@
+resource_registry:
+  "Magnum::Optional::Nova::Server": ../fragments/server_with_image.yaml

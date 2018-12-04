@@ -530,3 +530,18 @@ def add_priv_net_env_file(env_files, cluster_template):
         env_files.append(COMMON_ENV_PATH + 'no_private_network.yaml')
     else:
         env_files.append(COMMON_ENV_PATH + 'with_private_network.yaml')
+
+
+def add_server_env_file(env_files, cluster):
+    try:
+        boot_volume_size = int(cluster.labels.get(
+            'boot_volume_size',
+            CONF.cinder.default_boot_volume_size
+        ))
+    except ValueError:
+        boot_volume_size = 0
+
+    if boot_volume_size > 0:
+        env_files.append(COMMON_ENV_PATH + 'server_with_root_volume.yaml')
+    else:
+        env_files.append(COMMON_ENV_PATH + 'server_with_image.yaml')

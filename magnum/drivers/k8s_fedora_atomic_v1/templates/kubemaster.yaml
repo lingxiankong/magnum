@@ -39,10 +39,26 @@ parameters:
     constraints:
       - allowed_values: ["true", "false"]
 
+  boot_volume_size:
+    type: number
+    description: >
+      size of the cinder boot volume for nodes root volume
+    default: 0
+
+  boot_volume_type:
+    type: string
+    description: >
+      type of the cinder boot volume for nodes root volume
+
   etcd_volume_size:
     type: number
     description: >
       size of a cinder volume to allocate for etcd storage
+
+  etcd_volume_type:
+    type: string
+    description: >
+      type of a cinder volume to allocate for etcd storage
 
   docker_volume_size:
     type: number
@@ -656,7 +672,7 @@ resources:
     properties:
       signal_transport: HEAT_SIGNAL
       config: {get_resource: master_config}
-      server: {get_resource: kube-master}
+      server: {get_attr: [kube-master, server_id]}
       actions: ['CREATE']
 
   ######################################################################
@@ -668,19 +684,18 @@ resources:
   # it creates a mismatch between the generated Nova name and its hostname
   # which can lead to weird problems
   kube-master:
-    type: OS::Nova::Server
+    type: Magnum::Optional::Nova::Server
     properties:
       name: {get_param: name}
       image: {get_param: server_image}
       flavor: {get_param: master_flavor}
-      key_name: {get_param: ssh_key_name}
-      user_data_format: SOFTWARE_CONFIG
-      software_config_transport: POLL_SERVER_HEAT
+      ssh_key_name: {get_param: ssh_key_name}
       user_data: {get_resource: agent_config}
-      networks:
-        - port: {get_resource: kube_master_eth0}
-      scheduler_hints: { group: { get_param: nodes_server_group_id }}
+      port_id : {get_resource: kube_master_eth0}
+      server_group_id: { get_param: nodes_server_group_id }
       availability_zone: {get_param: availability_zone}
+      boot_volume_size: {get_param: boot_volume_size}
+      boot_volume_type: {get_param: boot_volume_type}
 
   kube_master_eth0:
     type: OS::Neutron::Port
@@ -726,11 +741,12 @@ resources:
     type: Magnum::Optional::Etcd::Volume
     properties:
       size: {get_param: etcd_volume_size}
+      volume_type: {get_param: etcd_volume_type}
 
   etcd_volume_attach:
     type: Magnum::Optional::Etcd::VolumeAttachment
     properties:
-      instance_uuid: {get_resource: kube-master}
+      instance_uuid: {get_attr: [kube-master, server_id]}
       volume_id: {get_resource: etcd_volume}
       mountpoint: /dev/vdc
 
@@ -749,7 +765,7 @@ resources:
   docker_volume_attach:
     type: Magnum::Optional::Cinder::VolumeAttachment
     properties:
-      instance_uuid: {get_resource: kube-master}
+      instance_uuid: {get_attr: [kube-master, server_id]}
       volume_id: {get_resource: docker_volume}
       mountpoint: /dev/vdb
 
@@ -767,7 +783,7 @@ resources:
     properties:
       signal_transport: HEAT_SIGNAL
       config: {get_resource: upgrade_kubernetes}
-      server: {get_resource: kube-master}
+      server: {get_attr: [kube-master, server_id]}
       actions: ['UPDATE']
       input_values:
         kube_tag_input: {get_param: kube_tag}
@@ -775,7 +791,7 @@ resources:
 outputs:
 
   OS::stack_id:
-    value: { get_resource: kube-master }
+    value: {get_attr: [kube-master, server_id]}
 
   kube_master_ip:
     value: {get_attr: [kube_master_eth0, fixed_ips, 0, ip_address]}
