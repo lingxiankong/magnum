@@ -439,3 +439,12 @@ class NGResizeOutBounds(Invalid):
     message = _("Resizing %(nodegroup)s outside the allowed range: "
                 "min_node_count = %(min_node_count)s, "
                 "max_node_count = %(max_node_count)s")
+
+
+class NetworkResourceCreationFailed(Conflict):
+    message = _("Failed to create network resource for cluster "
+                "%(cluster_uuid)s, error: %(msg)s.")
+
+
+class ClusterCreationTimeout(MagnumException):
+    message = _("Timeout waiting for the cluster %(cluster_uuid)s.")

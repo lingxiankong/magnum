@@ -121,9 +121,9 @@ class QuotaResourceName(fields.Enum):
 
 class ServerType(fields.Enum):
     ALL = (
-        VM, BM,
+        VM, BM, CONTAINER,
     ) = (
-        'vm', 'bm',
+        'vm', 'bm', 'container'
     )
 
     def __init__(self):
